@@ -99,3 +99,7 @@ how the two packages actually differ at build time (it derives both from `manife
 ## Commit messages
 
 - Do not add a `Co-authored-by` trailer to commits in this repository.
+- Follow [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/#specification):
+  `<type>[optional scope]: <description>`, e.g. `feat(options): add custom job display names`.
+  Common types: `feat`, `fix`, `docs`, `test`, `refactor`, `chore`. Use a `!` after the
+  type/scope (e.g. `feat!:`) or a `BREAKING CHANGE:` footer for breaking changes.
