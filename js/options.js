@@ -20,11 +20,14 @@ import { init, Jobs, $rootScope } from './services.js';
 
 init();
 
-const urlsTextarea = document.querySelector('#urls');
+const jobEntriesContainer = document.querySelector('#jobEntries');
+const jobEntryTemplate = document.querySelector('#jobEntryTemplate');
+const addJobEntryButton = document.querySelector('#addJobEntry');
+const urlsErrorElement = document.querySelector('#urlsError');
 const urlPattern = /^https?:\/\/.+/;
 
 $rootScope.$on('Jobs::jobs.initialized', function (event, jobs) {
-  showJobUrls(jobs);
+  renderJobEntries(jobs);
 });
 
 NodeList.prototype.forEach = Array.prototype.forEach;
@@ -55,14 +58,68 @@ function showSavedNotification(statusElement) {
   }, 2000);
 }
 
-function validateUrls(urls) {
-  const isValid = urls.every(url => url.trim() === '' || urlPattern.test(url.trim()));
-  urlsTextarea.classList.toggle('invalid', !isValid);
-  return isValid;
+// Renders one row per job/view URL, prefilled with its custom name (if any).
+function renderJobEntries(jobs) {
+  jobEntriesContainer.innerHTML = '';
+  Object.keys(jobs || {}).forEach(function (url) {
+    appendJobEntryRow(url, jobs[url] && jobs[url].customName);
+  });
 }
 
-function showJobUrls(jobs) {
-  urlsTextarea.value = Object.keys(jobs).join("\n");
+function appendJobEntryRow(url, name) {
+  const fragment = document.importNode(jobEntryTemplate.content, true);
+  const row = fragment.querySelector('.job-entry-row');
+  const urlInput = row.querySelector('.job-entry-url');
+  const nameInput = row.querySelector('.job-entry-name');
+  const removeButton = row.querySelector('.job-entry-remove');
+
+  urlInput.value = url || '';
+  nameInput.value = name || '';
+
+  removeButton.addEventListener('click', function () {
+    row.remove();
+  });
+
+  jobEntriesContainer.appendChild(row);
+  return row;
+}
+
+function addEmptyRow() {
+  const row = appendJobEntryRow('', '');
+  row.querySelector('.job-entry-url').focus();
+}
+
+// Reads all rows, validating URLs. Fully empty rows are silently skipped.
+// Returns the collected {url, name} entries, or null if any row is invalid.
+function validateAndCollectEntries() {
+  const rows = jobEntriesContainer.querySelectorAll('.job-entry-row');
+  let isValid = true;
+  const entries = [];
+
+  rows.forEach(function (row) {
+    const urlInput = row.querySelector('.job-entry-url');
+    const nameInput = row.querySelector('.job-entry-name');
+    const url = urlInput.value.trim();
+    const name = nameInput.value.trim();
+
+    if (!url && !name) {
+      urlInput.classList.remove('invalid');
+      return;
+    }
+
+    const isUrlValid = urlPattern.test(url);
+    urlInput.classList.toggle('invalid', !isUrlValid);
+
+    if (!isUrlValid) {
+      isValid = false;
+      return;
+    }
+
+    entries.push({url: url, name: name});
+  });
+
+  urlsErrorElement.style.display = isValid ? 'none' : 'block';
+  return isValid ? entries : null;
 }
 
 // Format shortcut for display
@@ -143,17 +200,16 @@ function saveOptions() {
   });
 }
 
-// Saves urls to chrome.storage.local.
+// Saves job entries (url + optional custom name) to chrome.storage.local.
 function saveUrls() {
-  const value = urlsTextarea.value.trim();
-  const newUrls = value ? value.replace(/[\r\n]+/g, "\n").split("\n") : [];
-  
-  if (!validateUrls(newUrls)) {
+  const entries = validateAndCollectEntries();
+
+  if (!entries) {
     return;
   }
 
-  Jobs.setUrls(newUrls)
-    .then(showJobUrls)
+  Jobs.setUrls(entries)
+    .then(renderJobEntries)
     .then(() => {
       showSavedNotification(urlsStatusElement);
     })
@@ -189,12 +245,6 @@ function updateRefreshTimeSpan() {
   refreshTimeSpan.textContent = refreshTimeInput.value;
 }
 
-// URL validation on input
-urlsTextarea.addEventListener('input', function() {
-  const urls = this.value.trim().split('\n');
-  validateUrls(urls);
-});
-
 // Shortcut input handling
 shortcutInput.addEventListener('keydown', handleShortcutInput);
 shortcutInput.addEventListener('click', function() {
@@ -213,4 +263,5 @@ document.querySelectorAll('input[type=radio], #refreshTime').forEach(function (e
 });
 
 document.querySelector('#saveUrls').addEventListener('click', saveUrls);
+addJobEntryButton.addEventListener('click', addEmptyRow);
 refreshTimeInput.addEventListener('input', updateRefreshTimeSpan);

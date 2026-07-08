@@ -57,11 +57,9 @@ Object.defineProperty(HTMLTemplateElement.prototype, 'content', {
 Document.prototype.importNode = function(node, deep) {
   if (node instanceof DocumentFragment) {
     const fragment = document.createDocumentFragment();
-    const div = document.createElement('div');
-    div.innerHTML = node.firstChild.outerHTML;
-    while (div.firstChild) {
-      fragment.appendChild(div.firstChild);
-    }
+    Array.from(node.childNodes).forEach(function (child) {
+      fragment.appendChild(child.cloneNode(deep));
+    });
     return fragment;
   }
   return node.cloneNode(deep);

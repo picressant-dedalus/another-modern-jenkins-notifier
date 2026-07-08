@@ -158,6 +158,108 @@ describe('Browser API Tests', () => {
     });
   }, 60000); // Increase timeout for options test
 
+  describe('Popup Job List Rendering', () => {
+    test('should prefer customName over name when rendering a job', async () => {
+      // Set up DOM with the real popup markup, including the job templates
+      document.body.innerHTML = `
+        <body class="container-fluid">
+          <header>
+            <h1 class="h4">
+              Yet Another Jenkins Notifier
+              <small><a id="optionsLink" href="#"><span class="glyphicon glyphicon-cog"></span></a></small>
+            </h1>
+          </header>
+          <main>
+            <div id="jobList" class="list-group"></div>
+            <p class="help-block">No jobs. Please enter a url below to listen for job builds.</p>
+            <template id="jobItemTemplate">
+              <div class="list-group-item">
+                <div class="row">
+                  <div class="col-xs-2">
+                    <img data-jobstatusclass class="img-rounded avatar" alt="Jenkins" src="img/icon48.png">
+                  </div>
+                  <div class="col-xs-8">
+                    <div class="job-title no-margin inline-block">
+                      <h4>
+                        <span data-jobfield="name"><!--name--></span>
+                        <br>
+                        <a class="small" target="_blank" data-joburl data-jobfield="url"><!--url--></a>
+                      </h4>
+                    </div>
+                  </div>
+                  <div class="col-xs-2">
+                    <div class="pull-right">
+                      <button type="button" class="close" aria-label="Close"><span
+                        aria-hidden="true">&times;</span></button>
+                      <a class="label label-danger" target="_blank" data-joburl data-joberror>
+                        <span class="glyphicon glyphicon-exclamation-sign"></span>
+                        Error
+                      </a>
+                      <p data-jobfield="status" data-jobstatusclass class="badge"><!--status--></p>
+                    </div>
+                  </div>
+                </div>
+                <ul data-id="jobs" class="list-unstyled">
+                  <!--View jobs-->
+                </ul>
+              </div>
+            </template>
+            <template id="jobSubItemTemplate">
+              <li class="row">
+                <div class="col-xs-8">
+                  <div class="job-title">
+                    <a target="_blank" data-joburl data-jobfield="name"><!--name--></a>
+                  </div>
+                </div>
+                <div class="col-xs-1">
+                  <span class="small" data-lastbuildtime><!--lastBuildTime--></span>
+                </div>
+                <div class="col-xs-3 text-center">
+                  <span data-jobfield="status" data-jobstatusclass class="badge"><!--status--></span>
+                </div>
+              </li>
+            </template>
+          </main>
+          <footer>
+            <form id="urlForm" name="urlForm">
+              <div class="input-group">
+                <label class="input-group-addon" for="url">Url</label>
+                <input type="url" class="form-control" id="url" name="url"
+                       pattern="https?://.+"
+                       placeholder="http://jenkins/"
+                       autofocus tabindex="1" required>
+                <span class="input-group-btn">
+                    <button id="addButton" type="submit" class="btn btn-primary">
+                      <span class="glyphicon glyphicon-plus"></span>
+                    </button>
+                  </span>
+              </div>
+              <div id="errorMessage" class="help-block"></div>
+            </form>
+          </footer>
+        </body>
+      `;
+
+      // Initialize popup, then broadcast jobs with and without a customName
+      await documentReady();
+
+      Jobs.jobs = {
+        'http://jenkins/job/renamed/': {
+          name: 'renamed', customName: 'Backend Team', status: 'SUCCESS', url: 'http://jenkins/job/renamed/'
+        },
+        'http://jenkins/job/plain/': {
+          name: 'plain', status: 'SUCCESS', url: 'http://jenkins/job/plain/'
+        }
+      };
+      $rootScope.$broadcast('Jobs::jobs.changed', Jobs.jobs);
+
+      const items = document.querySelectorAll('#jobList > .list-group-item');
+      expect(items.length).toBe(2);
+      expect(items[0].querySelector('[data-jobfield="name"]').innerText).toBe('Backend Team');
+      expect(items[1].querySelector('[data-jobfield="name"]').innerText).toBe('plain');
+    });
+  });
+
   describe('Cross-browser Compatibility', () => {
     test('should handle Firefox manifest', () => {
       const firefoxManifest = require('../manifest_firefox.json');

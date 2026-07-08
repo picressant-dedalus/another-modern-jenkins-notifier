@@ -186,7 +186,9 @@ export async function documentReady() {
       node.classList.toggle('building', job.building);
 
       _.forEach(node.querySelectorAll('[data-jobfield]'), function (el) {
-        el.innerText = job[el.dataset.jobfield] || '';
+        var field = el.dataset.jobfield;
+        var value = field === 'name' ? (job.customName || job.name) : job[field];
+        el.innerText = value || '';
       });
 
       _.forEach(node.querySelectorAll('[data-lastbuildtime]'), function (el) {

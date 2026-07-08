@@ -145,6 +145,7 @@ function defaultJobDataService() {
     var jobNameRegExp = /.*\/job\/([^/]+)(\/.*|$)/;
     return {
       name: decodeURI(url.replace(jobNameRegExp, '$1')),
+      customName: undefined,
       url: decodeURI(url),
       building: false,
       status: status || '',
@@ -282,10 +283,14 @@ function JobsService($q, Storage, jenkins, defaultJobData) {
       delete Jobs.jobs[url];
       return Storage.set({jobs: Jobs.jobs});
     },
-    setUrls: function (urls) {
+    setUrls: function (entries) {
       var newJobs = {};
-      urls.forEach(function (url) {
-        newJobs[url] = Jobs.jobs[url] || defaultJobData(url);
+      entries.forEach(function (entry) {
+        var url = typeof entry === 'string' ? entry : entry.url;
+        var name = typeof entry === 'string' ? undefined : entry.name;
+        var job = Jobs.jobs[url] || defaultJobData(url);
+        job.customName = name || undefined;
+        newJobs[url] = job;
       });
       Jobs.jobs = newJobs;
 
@@ -300,6 +305,11 @@ function JobsService($q, Storage, jenkins, defaultJobData) {
         data.error = (res instanceof Error ? res.message : res.statusText) || 'Unreachable';
         return data;
       }).then(function (data) {
+        // Preserve a user-set custom name across status refreshes
+        var existing = Jobs.jobs[url];
+        if (existing && existing.customName) {
+          data.customName = existing.customName;
+        }
         return Jobs.add(url, data);
       });
     },
@@ -371,7 +381,7 @@ function buildNotifierService($rootScope, Notification) {
       
       const options = {
         type: 'basic',
-        title: title + ' - ' + newValue.name,
+        title: title + ' - ' + (newValue.customName || newValue.name),
         message: buildUrl,
         iconUrl: chrome.runtime.getURL(iconPath),
         requireInteraction: true

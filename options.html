@@ -9,19 +9,10 @@
       opacity: 0.75;
     }
 
-    textarea {
-      width: 100%;
-      min-height: 150px;
-    }
-
     .error {
       color: #d9534f;
       margin-top: 5px;
       display: none;
-    }
-
-    textarea.invalid + .error {
-      display: block;
     }
 
     .shortcut-input {
@@ -41,6 +32,31 @@
       color: #666;
       font-size: 0.9em;
       margin-top: 5px;
+    }
+
+    .job-entry-row {
+      display: flex;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .job-entry-url {
+      flex: 2;
+      margin-right: 8px;
+    }
+
+    .job-entry-name {
+      flex: 1;
+      margin-right: 8px;
+    }
+
+    .job-entry-url.invalid {
+      border-color: #d9534f;
+      color: #d9534f;
+    }
+
+    .job-entry-remove {
+      flex: none;
     }
   </style>
 </head>
@@ -91,11 +107,19 @@
 
 <fieldset>
   <legend>Listening job build urls</legend>
-  <i>One url per line</i>
-  <br>
-  <textarea id="urls" placeholder="http://jenkins/job/my_job/"></textarea>
-  <div class="error">Please enter valid Jenkins URLs (must start with http:// or https://)</div>
-  <br>
+  <i>One entry per job, view or folder. Name is optional and overrides the name fetched from Jenkins.</i>
+  <br><br>
+  <div id="jobEntries"></div>
+  <template id="jobEntryTemplate">
+    <div class="job-entry-row">
+      <input type="url" class="job-entry-url" placeholder="http://jenkins/job/my_job/" pattern="https?://.+">
+      <input type="text" class="job-entry-name" placeholder="Custom name (optional)">
+      <button type="button" class="job-entry-remove" aria-label="Remove">&times;</button>
+    </div>
+  </template>
+  <div class="error" id="urlsError">Please enter valid Jenkins URLs (must start with http:// or https://)</div>
+  <button id="addJobEntry" type="button">+ Add job</button>
+  <br><br>
   <button id="saveUrls" type="submit">Save urls</button>
 </fieldset>
 <p style="visibility: hidden" id="urlsStatus">Urls saved.</p>

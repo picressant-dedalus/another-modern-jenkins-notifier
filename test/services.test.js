@@ -202,6 +202,77 @@ describe('Jenkins Notifier Job Tracking Tests', () => {
     await Jobs.remove(jobUrl);
     expect(Jobs.jobs[jobUrl]).toBeUndefined();
   });
+
+  test('should preserve custom name across status refresh', async () => {
+    const jobUrl = 'http://jenkins.example.com/job/renamed-job/';
+
+    await Jobs.add(jobUrl);
+    Jobs.jobs[jobUrl].customName = 'My Custom Name';
+
+    const result = await Jobs.updateStatus(jobUrl);
+
+    expect(result.newValue.customName).toBe('My Custom Name');
+    expect(Jobs.jobs[jobUrl].customName).toBe('My Custom Name');
+    // The Jenkins-derived name is still tracked separately
+    expect(result.newValue.name).toBe('Test Job 1');
+  });
+
+  test('should not add a custom name when none was set', async () => {
+    const jobUrl = 'http://jenkins.example.com/job/no-custom-name/';
+
+    await Jobs.add(jobUrl);
+    const result = await Jobs.updateStatus(jobUrl);
+
+    expect(result.newValue.customName).toBeUndefined();
+  });
+
+  describe('setUrls', () => {
+    test('should create new entries with the given custom name', async () => {
+      const url = 'http://jenkins.example.com/job/new-view/';
+
+      const jobs = await Jobs.setUrls([{url, name: 'My View'}]);
+
+      expect(jobs[url]).toBeDefined();
+      expect(jobs[url].customName).toBe('My View');
+    });
+
+    test('should preserve existing job/status data when re-saving a known URL', async () => {
+      const url = 'http://jenkins.example.com/job/existing-job/';
+
+      await Jobs.add(url);
+      await Jobs.updateStatus(url);
+      expect(Jobs.jobs[url].status).toBe('Success');
+
+      const jobs = await Jobs.setUrls([{url, name: 'Renamed'}]);
+
+      expect(jobs[url].status).toBe('Success');
+      expect(jobs[url].customName).toBe('Renamed');
+    });
+
+    test('should drop URLs no longer present in the entries list', async () => {
+      const keepUrl = 'http://jenkins.example.com/job/keep/';
+      const dropUrl = 'http://jenkins.example.com/job/drop/';
+
+      await Jobs.add(keepUrl);
+      await Jobs.add(dropUrl);
+
+      const jobs = await Jobs.setUrls([{url: keepUrl, name: ''}]);
+
+      expect(jobs[keepUrl]).toBeDefined();
+      expect(jobs[dropUrl]).toBeUndefined();
+    });
+
+    test('should clear the custom name when name is blank', async () => {
+      const url = 'http://jenkins.example.com/job/clear-name/';
+
+      await Jobs.setUrls([{url, name: 'Temporary Name'}]);
+      expect(Jobs.jobs[url].customName).toBe('Temporary Name');
+
+      const jobs = await Jobs.setUrls([{url, name: ''}]);
+
+      expect(jobs[url].customName).toBeUndefined();
+    });
+  });
 });
 
 describe('Concurrent Operations', () => {
