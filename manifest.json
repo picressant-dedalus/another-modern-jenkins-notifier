@@ -1,15 +1,15 @@
 {
   "manifest_version": 3,
-  "name": "Modern Jenkins Notifier",
+  "name": "Another Modern Jenkins Notifier",
   "description": "A modern browser extension that notifies you of Jenkins build results with Manifest V3 support.",
   "author": "Himanshu Pandey",
-  "homepage_url": "https://github.com/hp77-creator/modern-jenkins-notifier",
-  "version": "2.3.2",
+  "homepage_url": "https://github.com/picressant-dedalus/another-modern-jenkins-notifier",
+  "version": "2.4.0",
   "minimum_chrome_version": "88",
   "action": {
     "default_icon": "img/icon.png",
     "default_popup": "popup.html",
-    "default_title": "Modern Jenkins Notifier"
+    "default_title": "Another Modern Jenkins Notifier"
   },
   "icons": {
     "16": "img/icon16.png",

@@ -1,4 +1,4 @@
-![Jenkins Logo](img/icon48.png) Modern Jenkins Notifier
+![Jenkins Logo](img/icon48.png) Another Modern Jenkins Notifier
 ------------------
 
 A modern browser extension that monitors Jenkins jobs and notifies you of build results with desktop notifications. Built with Manifest V3 support for enhanced security and performance.
@@ -29,13 +29,13 @@ This extension was originally created by Guillaume Girou ([Twitter](https://twit
 
 # Source
 
-Source code available on [GitHub](https://github.com/hp77-creator/modern-jenkins-notifier).
+Source code available on [GitHub](https://github.com/picressant-dedalus/another-modern-jenkins-notifier).
 
 # Bug tracker
 
-Found a bug? Please submit an issue on [GitHub](https://github.com/hp77-creator/modern-jenkins-notifier/issues/new) or even better, submit a pull request :)
+Found a bug? Please submit an issue on [GitHub](https://github.com/picressant-dedalus/another-modern-jenkins-notifier/issues/new) or even better, submit a pull request :)
 
 # Copyright and license
 
 Copyright 2024 Modern Jenkins Notifier.
-Released under [GNU General Public License v3.0](https://github.com/hp77-creator/modern-jenkins-notifier/blob/master/LICENSE).
+Released under [GNU General Public License v3.0](https://github.com/picressant-dedalus/another-modern-jenkins-notifier/blob/master/LICENSE).
