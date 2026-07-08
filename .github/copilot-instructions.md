@@ -50,7 +50,12 @@ MV3 rewrite and the pattern is preserved intentionally):
   page contexts, and a regex-based fallback because `DOMParser` is unavailable in the MV3 service
   worker context.
 - `Jobs` — in-memory `jobs` map (keyed by job URL) persisted to `chrome.storage.local`, with
-  `add`/`remove`/`setUrls`/`updateStatus`/`updateAllStatus`.
+  `add`/`remove`/`setUrls`/`updateStatus`/`updateAllStatus`. Each job's default shape includes an
+  optional `customName` (user-set override of the Jenkins-derived `name`, set from the Options
+  page); anywhere a job name is displayed or used (popup list, build notifications) should prefer
+  `customName || name`. `setUrls` accepts an array of `{url, name}` entries (plain strings are
+  still accepted for backward compatibility) and preserves `customName` across `updateStatus`
+  refreshes.
 - `buildNotifier` / `buildWatcher` — compare old vs. new job state to decide whether to fire a
   desktop notification (respects the `notification` option: `all` / `unstable` / `none`), and
   manage the `setInterval` polling loop, restarting it when options change.
@@ -72,7 +77,25 @@ how the two packages actually differ at build time (it derives both from `manife
   existing files.
 - Tests live in `test/*.test.js` with mocks in `test/mocks/` (`chrome.mock.js`, `services.mock.js`,
   `popup.mock.js`). `test/setup.js` installs the global `chrome` mock, fake timers, DOM
-  template/importNode polyfills, and resets mocks in `beforeEach`. Use `global.flushPromises()` to
-  await pending microtasks/timers in async tests.
+  template/importNode polyfills, and resets mocks in `beforeEach`.
+  - `global.flushPromises()` (test/setup.js) is broken/deadlocks under the global fake timers
+    (its first `setTimeout` never fires because nothing advances the fake clock first) — don't use
+    it; use a local helper like `await Promise.resolve()` (x2) instead.
+  - `test/popup.test.js` hangs indefinitely (~100% CPU) on both new and unmodified baseline code;
+    root cause not identified. Avoid adding to or running it; it also fully mocks `../js/popup.js`
+    via `popup.mock.js` rather than exercising the real module. Prefer adding real-module coverage
+    of `js/popup.js` behavior to `test/browser-api.test.js` instead (it already imports
+    `documentReady` from the real module).
+  - `js/options.js` has no exports and wires everything at import time as a side effect (top-level
+    `document.querySelector` + `DOMContentLoaded`). To test it: set up
+    `document.body.innerHTML` *before* requiring the module, and use `jest.resetModules()` +
+    `require()` (not static `import`) so the module re-executes against the fresh DOM — see
+    `test/options.test.js`.
+- `babel.config.js` (repo root) provides `@babel/preset-env` and is required for Jest to parse
+  ES module syntax at all — don't remove it.
 - Jest env is `jsdom`; tests run with `--runInBand` for the performance suite specifically to avoid
   timing interference.
+
+## Commit messages
+
+- Do not add a `Co-authored-by` trailer to commits in this repository.
