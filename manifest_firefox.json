@@ -3,7 +3,7 @@
   "name": "Another Modern Jenkins Notifier",
   "description": "A modern browser extension that notifies you of Jenkins build results with Manifest V3 support.",
   "homepage_url": "https://github.com/picressant-dedalus/another-modern-jenkins-notifier",
-  "version": "2.4.0",
+  "version": "2.5.0",
   "action": {
     "default_icon": "img/icon.png",
     "default_popup": "popup.html",
