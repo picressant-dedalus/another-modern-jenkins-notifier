@@ -430,7 +430,8 @@ function buildNotifierService($rootScope, Notification) {
 function initOptions($rootScope, Storage) {
   $rootScope.options = {
     refreshTime: 60,
-    notification: 'all'
+    notification: 'all',
+    showSummary: true
   };
 
   // Add storage change listener during initialization

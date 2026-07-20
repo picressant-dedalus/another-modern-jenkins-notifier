@@ -29,6 +29,12 @@ function setupOptionsDom() {
         <input min="5" max="120" step="5" type="range" id="refreshTime">
         <span id="refreshTimeSpan"></span>
       </p>
+      <p>
+        <label>
+          <input type="checkbox" id="showSummary" checked>
+          Show build status summary at top of popup
+        </label>
+      </p>
     </fieldset>
     <p style="visibility: hidden" id="optionStatus">Options saved.</p>
 
@@ -180,5 +186,29 @@ describe('Options Page job entries', () => {
       {url: 'http://jenkins.example.com/job/only-one/', name: ''}
     ]);
     expect(document.getElementById('urlsError').style.display).toBe('none');
+  });
+
+  test('saves showSummary option when the checkbox is toggled off', () => {
+    const checkbox = document.getElementById('showSummary');
+    checkbox.checked = false;
+    checkbox.dispatchEvent(new Event('change'));
+
+    const setCall = chrome.storage.local.set.mock.calls
+      .map(call => call[0])
+      .reverse()
+      .find(arg => arg && arg.options);
+
+    expect(setCall).toBeDefined();
+    expect(setCall.options.showSummary).toBe(false);
+  });
+
+  test('restores the showSummary checkbox from stored options', () => {
+    chrome.storage.local.get.mockImplementation((keys, cb) => cb({
+      options: { refreshTime: 60, notification: 'all', showSummary: false }
+    }));
+
+    document.dispatchEvent(new Event('DOMContentLoaded'));
+
+    expect(document.getElementById('showSummary').checked).toBe(false);
   });
 });

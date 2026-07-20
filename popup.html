@@ -18,9 +18,28 @@
   </h1>
 </header>
 <main>
+  <div id="summary" class="list-group hidden"></div>
+
   <div id="jobList" class="list-group"></div>
 
   <p class="help-block">No jobs. Please enter a url below to listen for job builds.</p>
+
+  <template id="summaryItemTemplate">
+    <div class="list-group-item summary-item">
+      <div class="summary-name" data-summaryname><!--name--></div>
+      <div class="summary-counts">
+        <button type="button" class="label label-success summary-count" data-summarycount="success" title="Successful builds">
+          <span data-summaryfield="success">0</span>
+        </button>
+        <button type="button" class="label label-warning summary-count" data-summarycount="warning" title="Unstable builds">
+          <span data-summaryfield="warning">0</span>
+        </button>
+        <button type="button" class="label label-danger summary-count" data-summarycount="danger" title="Failing builds">
+          <span data-summaryfield="danger">0</span>
+        </button>
+      </div>
+    </div>
+  </template>
 
   <template id="jobItemTemplate">
     <div class="list-group-item">
@@ -31,7 +50,7 @@
         <div class="col-xs-8">
           <div class="job-title no-margin inline-block">
             <h4>
-              <span data-jobfield="name"><!--name--></span>
+              <a target="_blank" data-joburl data-jobfield="name"><!--name--></a>
               <br>
               <a class="small" target="_blank" data-joburl data-jobfield="url"><!--url--></a>
             </h4>

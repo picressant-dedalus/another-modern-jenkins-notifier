@@ -35,6 +35,32 @@ body {
     cursor: pointer;
 }
 
+.summary-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 10px;
+}
+
+.summary-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-weight: bold;
+    margin-right: 10px;
+}
+
+.summary-counts {
+    flex: none;
+    white-space: nowrap;
+}
+
+.summary-count {
+    border: none;
+    cursor: pointer;
+    margin-left: 4px;
+}
+
 .no-margin {
     margin: 0;
 }

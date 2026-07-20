@@ -260,6 +260,162 @@ describe('Browser API Tests', () => {
     });
   });
 
+  describe('Popup Summary Panel', () => {
+    const summaryMarkup = `
+      <body class="container-fluid">
+        <main>
+          <div id="summary" class="list-group hidden"></div>
+          <div id="jobList" class="list-group"></div>
+          <p class="help-block">No jobs.</p>
+          <template id="summaryItemTemplate">
+            <div class="list-group-item summary-item">
+              <div class="summary-name" data-summaryname><!--name--></div>
+              <div class="summary-counts">
+                <button type="button" class="label label-success summary-count" data-summarycount="success">
+                  <span data-summaryfield="success">0</span>
+                </button>
+                <button type="button" class="label label-warning summary-count" data-summarycount="warning">
+                  <span data-summaryfield="warning">0</span>
+                </button>
+                <button type="button" class="label label-danger summary-count" data-summarycount="danger">
+                  <span data-summaryfield="danger">0</span>
+                </button>
+              </div>
+            </div>
+          </template>
+          <template id="jobItemTemplate">
+            <div class="list-group-item">
+              <div class="row">
+                <div class="col-xs-8">
+                  <h4>
+                    <a target="_blank" data-joburl data-jobfield="name"><!--name--></a>
+                    <br>
+                    <a class="small" target="_blank" data-joburl data-jobfield="url"><!--url--></a>
+                  </h4>
+                </div>
+                <div class="col-xs-2">
+                  <button type="button" class="close"><span>&times;</span></button>
+                  <a class="label label-danger" target="_blank" data-joburl data-joberror></a>
+                  <p data-jobfield="status" data-jobstatusclass class="badge"><!--status--></p>
+                </div>
+              </div>
+              <ul data-id="jobs" class="list-unstyled"></ul>
+            </div>
+          </template>
+          <template id="jobSubItemTemplate">
+            <li class="row">
+              <a target="_blank" data-joburl data-jobfield="name"><!--name--></a>
+              <span class="small" data-lastbuildtime></span>
+              <span data-jobfield="status" data-jobstatusclass class="badge"><!--status--></span>
+            </li>
+          </template>
+        </main>
+        <footer>
+          <form id="urlForm" name="urlForm">
+            <input type="url" id="url" name="url" pattern="https?://.+" required>
+            <button id="addButton" type="submit"></button>
+            <div id="errorMessage" class="help-block"></div>
+          </form>
+          <a id="optionsLink" href="#"></a>
+        </footer>
+      </body>
+    `;
+
+    const viewWithSubJobs = () => ({
+      'http://jenkins/job/view/': {
+        name: 'My View',
+        url: 'http://jenkins/job/view/',
+        jobs: {
+          'a': { name: 'a', url: 'http://jenkins/job/view/job/a/', statusClass: 'success' },
+          'b': { name: 'b', url: 'http://jenkins/job/view/job/b/', statusClass: 'success' },
+          'c': { name: 'c', url: 'http://jenkins/job/view/job/c/', statusClass: 'warning' },
+          'd': { name: 'd', url: 'http://jenkins/job/view/job/d/', statusClass: 'danger' }
+        }
+      }
+    });
+
+    test('renders per-link status counts aggregated from sub-jobs', async () => {
+      document.body.innerHTML = summaryMarkup;
+      await documentReady();
+
+      Jobs.jobs = viewWithSubJobs();
+      $rootScope.$broadcast('Jobs::jobs.changed', Jobs.jobs);
+
+      const summary = document.getElementById('summary');
+      expect(summary.classList.contains('hidden')).toBe(false);
+
+      const row = summary.querySelector('.summary-item');
+      expect(row.querySelector('[data-summaryname]').innerText).toBe('My View');
+      expect(row.querySelector('[data-summaryfield="success"]').innerText).toBe('2');
+      expect(row.querySelector('[data-summaryfield="warning"]').innerText).toBe('1');
+      expect(row.querySelector('[data-summaryfield="danger"]').innerText).toBe('1');
+    });
+
+    test('counts a single job by its own status', async () => {
+      document.body.innerHTML = summaryMarkup;
+      await documentReady();
+
+      Jobs.jobs = {
+        'http://jenkins/job/one/': {
+          name: 'one', url: 'http://jenkins/job/one/', statusClass: 'danger'
+        }
+      };
+      $rootScope.$broadcast('Jobs::jobs.changed', Jobs.jobs);
+
+      const row = document.querySelector('#summary .summary-item');
+      expect(row.querySelector('[data-summaryfield="danger"]').innerText).toBe('1');
+      expect(row.querySelector('[data-summaryfield="success"]').innerText).toBe('0');
+    });
+
+    test('clicking a count scrolls to the matching job list item', async () => {
+      const scrollSpy = jest.fn();
+      const originalScroll = Element.prototype.scrollIntoView;
+      Element.prototype.scrollIntoView = scrollSpy;
+
+      try {
+        document.body.innerHTML = summaryMarkup;
+        await documentReady();
+
+        Jobs.jobs = viewWithSubJobs();
+        $rootScope.$broadcast('Jobs::jobs.changed', Jobs.jobs);
+
+        const jobItem = document.querySelector('#jobList > .list-group-item');
+        const count = document.querySelector('#summary [data-summarycount="danger"]');
+        count.click();
+
+        expect(scrollSpy).toHaveBeenCalled();
+        expect(scrollSpy.mock.instances[0]).toBe(jobItem);
+      } finally {
+        Element.prototype.scrollIntoView = originalScroll;
+      }
+    });
+
+    test('job name is a link pointing to the Jenkins url', async () => {
+      document.body.innerHTML = summaryMarkup;
+      await documentReady();
+
+      Jobs.jobs = viewWithSubJobs();
+      $rootScope.$broadcast('Jobs::jobs.changed', Jobs.jobs);
+
+      const nameLink = document.querySelector('#jobList [data-jobfield="name"]');
+      expect(nameLink.tagName).toBe('A');
+      expect(nameLink.getAttribute('href')).toBe('http://jenkins/job/view/');
+    });
+
+    test('hides the summary panel when showSummary option is false', async () => {
+      document.body.innerHTML = summaryMarkup;
+      await documentReady();
+
+      $rootScope.options.showSummary = false;
+      Jobs.jobs = viewWithSubJobs();
+      $rootScope.$broadcast('Jobs::jobs.changed', Jobs.jobs);
+
+      const summary = document.getElementById('summary');
+      expect(summary.classList.contains('hidden')).toBe(true);
+      expect(summary.querySelector('.summary-item')).toBeNull();
+    });
+  });
+
   describe('Cross-browser Compatibility', () => {
     test('should handle Firefox manifest', () => {
       const firefoxManifest = require('../manifest_firefox.json');

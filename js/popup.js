@@ -34,9 +34,14 @@ export async function documentReady() {
     const addButton = document.getElementById('addButton');
     const errorMessage = document.getElementById('errorMessage');
     const jobList = document.getElementById('jobList');
+    const summaryList = document.getElementById('summary');
     const jobItemTemplate = document.getElementById('jobItemTemplate');
     const jobSubItemTemplate = document.getElementById('jobSubItemTemplate');
+    const summaryItemTemplate = document.getElementById('summaryItemTemplate');
     const noJobsMessage = document.querySelector('.help-block');
+
+    // Maps a job url to its rendered list item, so summary counts can scroll to it.
+    const jobElements = new Map();
 
     optionsLink.addEventListener('click', openOptionsPage);
     urlForm.addEventListener('submit', addUrl);
@@ -55,6 +60,10 @@ export async function documentReady() {
     
     $rootScope.$on('Jobs::jobs.changed', function (_, jobs) {
       renderJobs(jobs);
+    });
+
+    $rootScope.$on('Options::options.changed', function () {
+      renderSummary(Jobs.jobs);
     });
 
     function openOptionsPage() {
@@ -120,16 +129,91 @@ export async function documentReady() {
         }
       }
 
+      jobElements.clear();
+
       // Show/hide no jobs message
       noJobsMessage.style.display = (!jobs || Object.keys(jobs).length === 0) ? 'block' : 'none';
 
       // If no jobs, return early
       if (!jobs || Object.keys(jobs).length === 0) {
+        renderSummary(jobs);
         return;
       }
 
       // Render jobs
       renderRepeat(jobList, jobItemTemplate, jobs, renderJobOrView);
+
+      // Map each top-level job url to its rendered element (rendered in key order).
+      Object.keys(jobs).forEach(function (url, i) {
+        if (jobList.children[i]) {
+          jobElements.set(url, jobList.children[i]);
+        }
+      });
+
+      renderSummary(jobs);
+    }
+
+    // Aggregates a monitored entry into successful/unstable/failing counts.
+    // Views/folders are counted by their sub-jobs; single jobs by themselves.
+    function countStatuses(job) {
+      const counts = { success: 0, warning: 0, danger: 0 };
+      const targets = job && job.jobs ? Object.keys(job.jobs).map(k => job.jobs[k]) : [job];
+
+      targets.forEach(function (target) {
+        if (target && counts.hasOwnProperty(target.statusClass)) {
+          counts[target.statusClass]++;
+        }
+      });
+
+      return counts;
+    }
+
+    function renderSummary(jobs) {
+      if (!summaryList || !summaryItemTemplate) {
+        return;
+      }
+
+      const show = $rootScope.options && $rootScope.options.showSummary !== false;
+      const hasJobs = jobs && Object.keys(jobs).length > 0;
+
+      // Clear existing summary rows (keep the template)
+      while (summaryList.firstChild) {
+        if (summaryList.firstChild.nodeName !== 'TEMPLATE') {
+          summaryList.firstChild.remove();
+        }
+      }
+
+      summaryList.classList.toggle('hidden', !show || !hasJobs);
+
+      if (!show || !hasJobs) {
+        return;
+      }
+
+      renderRepeat(summaryList, summaryItemTemplate, jobs, renderSummaryItem);
+    }
+
+    function renderSummaryItem(node, url, job) {
+      if (!job) return;
+
+      const counts = countStatuses(job);
+
+      _.forEach(node.querySelectorAll('[data-summaryname]'), function (el) {
+        el.innerText = (job.customName || job.name) || url;
+        el.title = job.url || url;
+      });
+
+      _.forEach(node.querySelectorAll('[data-summaryfield]'), function (el) {
+        el.innerText = String(counts[el.dataset.summaryfield]);
+      });
+
+      _.forEach(node.querySelectorAll('[data-summarycount]'), function (el) {
+        el.onclick = function () {
+          const target = jobElements.get(url);
+          if (target) {
+            target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+        };
+      });
     }
 
     function renderJobOrView(node, url, job) {

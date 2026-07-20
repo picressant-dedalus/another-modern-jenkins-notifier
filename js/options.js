@@ -39,10 +39,12 @@ const urlsStatusElement = document.getElementById('urlsStatus');
 const shortcutInput = document.getElementById('addJobShortcut');
 const resetShortcutButton = document.getElementById('resetShortcut');
 const shortcutStatusElement = document.getElementById('shortcutStatus');
+const showSummaryInput = document.getElementById('showSummary');
 
 const defaultOptions = {
   refreshTime: 60,
   notification: 'all',
+  showSummary: true,
   addJobShortcut: {
     key: 'j',
     shiftKey: true,
@@ -184,7 +186,8 @@ function resetShortcut() {
 function saveOptions() {
   const options = {
     refreshTime: refreshTimeInput.value,
-    notification: document.querySelector('[name=notification]:checked').value
+    notification: document.querySelector('[name=notification]:checked').value,
+    showSummary: showSummaryInput.checked
   };
   
   chrome.storage.local.get({options: defaultOptions}, function(objects) {
@@ -233,6 +236,7 @@ function restoreOptions() {
     document.querySelector('[name=notification]:checked').checked = false;
     document.querySelector('[name=notification][value="' + options.notification + '"]').checked = true;
     refreshTimeSpan.textContent = refreshTimeInput.value = options.refreshTime;
+    showSummaryInput.checked = options.showSummary !== false;
     
     // Restore shortcut
     if (options.addJobShortcut) {
@@ -258,7 +262,7 @@ document.addEventListener('DOMContentLoaded', () => {
   restoreOptions();
 });
 
-document.querySelectorAll('input[type=radio], #refreshTime').forEach(function (element) {
+document.querySelectorAll('input[type=radio], #refreshTime, #showSummary').forEach(function (element) {
   element.addEventListener('change', saveOptions);
 });
 
