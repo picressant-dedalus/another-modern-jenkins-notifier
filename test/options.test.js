@@ -50,6 +50,8 @@ function setupOptionsDom() {
         <div class="job-entry-row">
           <input type="url" class="job-entry-url" pattern="https?://.+">
           <input type="text" class="job-entry-name">
+          <button type="button" class="job-entry-move job-entry-up" aria-label="Move up">&#8593;</button>
+          <button type="button" class="job-entry-move job-entry-down" aria-label="Move down">&#8595;</button>
           <button type="button" class="job-entry-remove" aria-label="Remove">&times;</button>
         </div>
       </template>
@@ -169,6 +171,27 @@ describe('Options Page job entries', () => {
 
     expect(Jobs.setUrls).toHaveBeenCalledWith([
       {url: 'http://jenkins.example.com/job/new-view/', name: 'New View'}
+    ]);
+  });
+
+  test('saves entries in manual row order after moving', () => {
+    document.getElementById('addJobEntry').click();
+    document.getElementById('addJobEntry').click();
+    const rows = getRows();
+
+    rows[0].querySelector('.job-entry-url').value = 'http://jenkins.example.com/job/first/';
+    rows[0].querySelector('.job-entry-name').value = 'First';
+    rows[1].querySelector('.job-entry-url').value = 'http://jenkins.example.com/job/second/';
+    rows[1].querySelector('.job-entry-name').value = 'Second';
+
+    rows[1].querySelector('.job-entry-up').click();
+
+    Jobs.setUrls = jest.fn().mockResolvedValue({});
+    document.getElementById('saveUrls').click();
+
+    expect(Jobs.setUrls).toHaveBeenCalledWith([
+      {url: 'http://jenkins.example.com/job/second/', name: 'Second'},
+      {url: 'http://jenkins.example.com/job/first/', name: 'First'}
     ]);
   });
 

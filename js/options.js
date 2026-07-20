@@ -73,10 +73,26 @@ function appendJobEntryRow(url, name) {
   const row = fragment.querySelector('.job-entry-row');
   const urlInput = row.querySelector('.job-entry-url');
   const nameInput = row.querySelector('.job-entry-name');
+  const moveUpButton = row.querySelector('.job-entry-up');
+  const moveDownButton = row.querySelector('.job-entry-down');
   const removeButton = row.querySelector('.job-entry-remove');
 
   urlInput.value = url || '';
   nameInput.value = name || '';
+
+  moveUpButton.addEventListener('click', function () {
+    const previous = row.previousElementSibling;
+    if (previous) {
+      jobEntriesContainer.insertBefore(row, previous);
+    }
+  });
+
+  moveDownButton.addEventListener('click', function () {
+    const next = row.nextElementSibling;
+    if (next) {
+      jobEntriesContainer.insertBefore(next, row);
+    }
+  });
 
   removeButton.addEventListener('click', function () {
     row.remove();

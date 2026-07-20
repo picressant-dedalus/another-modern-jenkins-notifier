@@ -58,6 +58,11 @@
     .job-entry-remove {
       flex: none;
     }
+
+    .job-entry-move {
+      flex: none;
+      margin-right: 4px;
+    }
   </style>
 </head>
 
@@ -120,6 +125,8 @@
     <div class="job-entry-row">
       <input type="url" class="job-entry-url" placeholder="http://jenkins/job/my_job/" pattern="https?://.+">
       <input type="text" class="job-entry-name" placeholder="Custom name (optional)">
+      <button type="button" class="job-entry-move job-entry-up" aria-label="Move up">&#8593;</button>
+      <button type="button" class="job-entry-move job-entry-down" aria-label="Move down">&#8595;</button>
       <button type="button" class="job-entry-remove" aria-label="Remove">&times;</button>
     </div>
   </template>
