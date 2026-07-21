@@ -351,6 +351,37 @@ describe('Browser API Tests', () => {
       expect(row.querySelector('[data-summaryfield="danger"]').innerText).toBe('1');
     });
 
+    test('renders one summary row per group and deduplicates overlapping jobs', async () => {
+      document.body.innerHTML = summaryMarkup;
+      await documentReady();
+
+      Jobs.jobs = {
+        'http://jenkins/job/view/': {
+          name: 'My View',
+          url: 'http://jenkins/job/view/',
+          groupName: 'Backend',
+          jobs: {
+            'a': { name: 'a', url: 'http://jenkins/job/view/job/a/', statusClass: 'success' },
+            'b': { name: 'b', url: 'http://jenkins/job/view/job/b/', statusClass: 'warning' }
+          }
+        },
+        'http://jenkins/job/view/job/a/': {
+          name: 'a',
+          url: 'http://jenkins/job/view/job/a/',
+          groupName: 'Backend',
+          statusClass: 'success'
+        }
+      };
+      $rootScope.$broadcast('Jobs::jobs.changed', Jobs.jobs);
+
+      const rows = document.querySelectorAll('#summary .summary-item');
+      expect(rows.length).toBe(1);
+      expect(rows[0].querySelector('[data-summaryname]').innerText).toBe('Backend');
+      expect(rows[0].querySelector('[data-summaryfield="success"]').innerText).toBe('1');
+      expect(rows[0].querySelector('[data-summaryfield="warning"]').innerText).toBe('1');
+      expect(rows[0].querySelector('[data-summaryfield="danger"]').innerText).toBe('0');
+    });
+
     test('counts a single job by its own status', async () => {
       document.body.innerHTML = summaryMarkup;
       await documentReady();

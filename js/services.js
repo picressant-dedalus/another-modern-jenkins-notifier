@@ -146,6 +146,7 @@ function defaultJobDataService() {
     return {
       name: decodeURI(url.replace(jobNameRegExp, '$1')),
       customName: undefined,
+      groupName: undefined,
       url: decodeURI(url),
       building: false,
       status: status || '',
@@ -288,8 +289,10 @@ function JobsService($q, Storage, jenkins, defaultJobData) {
       entries.forEach(function (entry) {
         var url = typeof entry === 'string' ? entry : entry.url;
         var name = typeof entry === 'string' ? undefined : entry.name;
+        var group = typeof entry === 'string' ? undefined : entry.group;
         var job = Jobs.jobs[url] || defaultJobData(url);
         job.customName = name || undefined;
+        job.groupName = group || undefined;
         newJobs[url] = job;
       });
       Jobs.jobs = newJobs;
@@ -305,10 +308,13 @@ function JobsService($q, Storage, jenkins, defaultJobData) {
         data.error = (res instanceof Error ? res.message : res.statusText) || 'Unreachable';
         return data;
       }).then(function (data) {
-        // Preserve a user-set custom name across status refreshes
+        // Preserve user-set metadata across status refreshes
         var existing = Jobs.jobs[url];
         if (existing && existing.customName) {
           data.customName = existing.customName;
+        }
+        if (existing && existing.groupName) {
+          data.groupName = existing.groupName;
         }
         return Jobs.add(url, data);
       });

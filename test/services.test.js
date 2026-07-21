@@ -217,6 +217,18 @@ describe('Jenkins Notifier Job Tracking Tests', () => {
     expect(result.newValue.name).toBe('Test Job 1');
   });
 
+  test('should preserve group name across status refresh', async () => {
+    const jobUrl = 'http://jenkins.example.com/job/grouped-job/';
+
+    await Jobs.add(jobUrl);
+    Jobs.jobs[jobUrl].groupName = 'Core Team';
+
+    const result = await Jobs.updateStatus(jobUrl);
+
+    expect(result.newValue.groupName).toBe('Core Team');
+    expect(Jobs.jobs[jobUrl].groupName).toBe('Core Team');
+  });
+
   test('should not add a custom name when none was set', async () => {
     const jobUrl = 'http://jenkins.example.com/job/no-custom-name/';
 
@@ -234,6 +246,14 @@ describe('Jenkins Notifier Job Tracking Tests', () => {
 
       expect(jobs[url]).toBeDefined();
       expect(jobs[url].customName).toBe('My View');
+    });
+
+    test('should save group metadata from entries', async () => {
+      const url = 'http://jenkins.example.com/job/release-view/';
+
+      const jobs = await Jobs.setUrls([{url, name: 'Release View', group: 'Release'}]);
+
+      expect(jobs[url].groupName).toBe('Release');
     });
 
     test('should preserve existing job/status data when re-saving a known URL', async () => {
@@ -271,6 +291,17 @@ describe('Jenkins Notifier Job Tracking Tests', () => {
       const jobs = await Jobs.setUrls([{url, name: ''}]);
 
       expect(jobs[url].customName).toBeUndefined();
+    });
+
+    test('should clear the group name when group is blank', async () => {
+      const url = 'http://jenkins.example.com/job/clear-group/';
+
+      await Jobs.setUrls([{url, name: 'Grouped', group: 'Temporary Group'}]);
+      expect(Jobs.jobs[url].groupName).toBe('Temporary Group');
+
+      const jobs = await Jobs.setUrls([{url, name: 'Grouped', group: ''}]);
+
+      expect(jobs[url].groupName).toBeUndefined();
     });
   });
 });

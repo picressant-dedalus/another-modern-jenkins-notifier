@@ -50,6 +50,7 @@ function setupOptionsDom() {
         <div class="job-entry-row">
           <input type="url" class="job-entry-url" pattern="https?://.+">
           <input type="text" class="job-entry-name">
+          <input type="text" class="job-entry-group">
           <button type="button" class="job-entry-move job-entry-up" aria-label="Move up">&#8593;</button>
           <button type="button" class="job-entry-move job-entry-down" aria-label="Move down">&#8595;</button>
           <button type="button" class="job-entry-remove" aria-label="Remove">&times;</button>
@@ -101,7 +102,8 @@ describe('Options Page job entries', () => {
       'http://jenkins.example.com/job/one/': {
         url: 'http://jenkins.example.com/job/one/',
         name: 'one',
-        customName: 'My View'
+        customName: 'My View',
+        groupName: 'Team A'
       },
       'http://jenkins.example.com/job/two/': {
         url: 'http://jenkins.example.com/job/two/',
@@ -115,8 +117,10 @@ describe('Options Page job entries', () => {
     expect(rows.length).toBe(2);
     expect(rows[0].querySelector('.job-entry-url').value).toBe('http://jenkins.example.com/job/one/');
     expect(rows[0].querySelector('.job-entry-name').value).toBe('My View');
+    expect(rows[0].querySelector('.job-entry-group').value).toBe('Team A');
     expect(rows[1].querySelector('.job-entry-url').value).toBe('http://jenkins.example.com/job/two/');
     expect(rows[1].querySelector('.job-entry-name').value).toBe('');
+    expect(rows[1].querySelector('.job-entry-group').value).toBe('');
   });
 
   test('adds an empty row when clicking "Add job"', () => {
@@ -143,6 +147,7 @@ describe('Options Page job entries', () => {
     const row = getRows()[0];
     row.querySelector('.job-entry-url').value = 'not-a-url';
     row.querySelector('.job-entry-name').value = 'Bad Entry';
+    row.querySelector('.job-entry-group').value = 'Group X';
 
     Jobs.setUrls = jest.fn().mockResolvedValue({});
 
@@ -158,11 +163,13 @@ describe('Options Page job entries', () => {
     const row = getRows()[0];
     row.querySelector('.job-entry-url').value = 'http://jenkins.example.com/job/new-view/';
     row.querySelector('.job-entry-name').value = 'New View';
+    row.querySelector('.job-entry-group').value = 'Release';
 
     Jobs.setUrls = jest.fn().mockResolvedValue({
       'http://jenkins.example.com/job/new-view/': {
         url: 'http://jenkins.example.com/job/new-view/',
-        customName: 'New View'
+        customName: 'New View',
+        groupName: 'Release'
       }
     });
 
@@ -170,7 +177,7 @@ describe('Options Page job entries', () => {
     await flushMicrotasks();
 
     expect(Jobs.setUrls).toHaveBeenCalledWith([
-      {url: 'http://jenkins.example.com/job/new-view/', name: 'New View'}
+      {url: 'http://jenkins.example.com/job/new-view/', name: 'New View', group: 'Release'}
     ]);
   });
 
@@ -181,8 +188,10 @@ describe('Options Page job entries', () => {
 
     rows[0].querySelector('.job-entry-url').value = 'http://jenkins.example.com/job/first/';
     rows[0].querySelector('.job-entry-name').value = 'First';
+    rows[0].querySelector('.job-entry-group').value = 'A';
     rows[1].querySelector('.job-entry-url').value = 'http://jenkins.example.com/job/second/';
     rows[1].querySelector('.job-entry-name').value = 'Second';
+    rows[1].querySelector('.job-entry-group').value = 'B';
 
     rows[1].querySelector('.job-entry-up').click();
 
@@ -190,8 +199,8 @@ describe('Options Page job entries', () => {
     document.getElementById('saveUrls').click();
 
     expect(Jobs.setUrls).toHaveBeenCalledWith([
-      {url: 'http://jenkins.example.com/job/second/', name: 'Second'},
-      {url: 'http://jenkins.example.com/job/first/', name: 'First'}
+      {url: 'http://jenkins.example.com/job/second/', name: 'Second', group: 'B'},
+      {url: 'http://jenkins.example.com/job/first/', name: 'First', group: 'A'}
     ]);
   });
 
@@ -206,7 +215,7 @@ describe('Options Page job entries', () => {
     document.getElementById('saveUrls').click();
 
     expect(Jobs.setUrls).toHaveBeenCalledWith([
-      {url: 'http://jenkins.example.com/job/only-one/', name: ''}
+      {url: 'http://jenkins.example.com/job/only-one/', name: '', group: ''}
     ]);
     expect(document.getElementById('urlsError').style.display).toBe('none');
   });

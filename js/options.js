@@ -64,21 +64,27 @@ function showSavedNotification(statusElement) {
 function renderJobEntries(jobs) {
   jobEntriesContainer.innerHTML = '';
   Object.keys(jobs || {}).forEach(function (url) {
-    appendJobEntryRow(url, jobs[url] && jobs[url].customName);
+    appendJobEntryRow(
+      url,
+      jobs[url] && jobs[url].customName,
+      jobs[url] && jobs[url].groupName
+    );
   });
 }
 
-function appendJobEntryRow(url, name) {
+function appendJobEntryRow(url, name, group) {
   const fragment = document.importNode(jobEntryTemplate.content, true);
   const row = fragment.querySelector('.job-entry-row');
   const urlInput = row.querySelector('.job-entry-url');
   const nameInput = row.querySelector('.job-entry-name');
+  const groupInput = row.querySelector('.job-entry-group');
   const moveUpButton = row.querySelector('.job-entry-up');
   const moveDownButton = row.querySelector('.job-entry-down');
   const removeButton = row.querySelector('.job-entry-remove');
 
   urlInput.value = url || '';
   nameInput.value = name || '';
+  groupInput.value = group || '';
 
   moveUpButton.addEventListener('click', function () {
     const previous = row.previousElementSibling;
@@ -108,7 +114,7 @@ function addEmptyRow() {
 }
 
 // Reads all rows, validating URLs. Fully empty rows are silently skipped.
-// Returns the collected {url, name} entries, or null if any row is invalid.
+// Returns the collected {url, name, group} entries, or null if any row is invalid.
 function validateAndCollectEntries() {
   const rows = jobEntriesContainer.querySelectorAll('.job-entry-row');
   let isValid = true;
@@ -117,10 +123,12 @@ function validateAndCollectEntries() {
   rows.forEach(function (row) {
     const urlInput = row.querySelector('.job-entry-url');
     const nameInput = row.querySelector('.job-entry-name');
+    const groupInput = row.querySelector('.job-entry-group');
     const url = urlInput.value.trim();
     const name = nameInput.value.trim();
+    const group = groupInput.value.trim();
 
-    if (!url && !name) {
+    if (!url && !name && !group) {
       urlInput.classList.remove('invalid');
       return;
     }
@@ -133,7 +141,7 @@ function validateAndCollectEntries() {
       return;
     }
 
-    entries.push({url: url, name: name});
+    entries.push({url: url, name: name, group: group});
   });
 
   urlsErrorElement.style.display = isValid ? 'none' : 'block';

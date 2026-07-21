@@ -40,8 +40,8 @@ export async function documentReady() {
     const summaryItemTemplate = document.getElementById('summaryItemTemplate');
     const noJobsMessage = document.querySelector('.help-block');
 
-    // Maps a job url to its rendered list item, so summary counts can scroll to it.
-    const jobElements = new Map();
+    // Maps each summary group key to its top rendered element for quick scrolling.
+    const summaryTargets = new Map();
 
     optionsLink.addEventListener('click', openOptionsPage);
     urlForm.addEventListener('submit', addUrl);
@@ -63,7 +63,7 @@ export async function documentReady() {
     });
 
     $rootScope.$on('Options::options.changed', function () {
-      renderSummary(Jobs.jobs);
+      renderSummary(buildRenderGroups(Jobs.jobs));
     });
 
     function openOptionsPage() {
@@ -129,52 +129,126 @@ export async function documentReady() {
         }
       }
 
-      jobElements.clear();
+      summaryTargets.clear();
 
       // Show/hide no jobs message
       noJobsMessage.style.display = (!jobs || Object.keys(jobs).length === 0) ? 'block' : 'none';
 
       // If no jobs, return early
       if (!jobs || Object.keys(jobs).length === 0) {
-        renderSummary(jobs);
+        renderSummary([]);
         return;
       }
 
-      // Render jobs
-      renderRepeat(jobList, jobItemTemplate, jobs, renderJobOrView);
-
-      // Map each top-level job url to its rendered element (rendered in key order).
-      Object.keys(jobs).forEach(function (url, i) {
-        if (jobList.children[i]) {
-          jobElements.set(url, jobList.children[i]);
-        }
-      });
-
-      renderSummary(jobs);
+      var groups = buildRenderGroups(jobs);
+      renderGroupedJobs(groups);
+      renderSummary(groups);
     }
 
-    // Aggregates a monitored entry into successful/unstable/failing counts.
-    // Views/folders are counted by their sub-jobs; single jobs by themselves.
-    function countStatuses(job) {
-      const counts = { success: 0, warning: 0, danger: 0 };
-      const targets = job && job.jobs ? Object.keys(job.jobs).map(k => job.jobs[k]) : [job];
+    function normalizeJobUrl(url) {
+      return (url || '').replace(/\/+$/, '');
+    }
 
-      targets.forEach(function (target) {
-        if (target && counts.hasOwnProperty(target.statusClass)) {
-          counts[target.statusClass]++;
+    function displayName(url, job) {
+      return (job && (job.customName || job.name)) || url;
+    }
+
+    // Build popup groups while preserving monitored-link order.
+    function buildRenderGroups(jobs) {
+      const groups = [];
+      const byKey = new Map();
+
+      Object.keys(jobs || {}).forEach(function (url) {
+        const job = jobs[url];
+        const rawGroup = (job && job.groupName || '').trim();
+        const key = rawGroup ? 'group:' + rawGroup : 'url:' + url;
+
+        if (!byKey.has(key)) {
+          const group = {
+            key: key,
+            name: rawGroup || displayName(url, job),
+            hasExplicitName: !!rawGroup,
+            items: []
+          };
+          byKey.set(key, group);
+          groups.push(group);
         }
+
+        byKey.get(key).items.push({ url: url, job: job });
+      });
+
+      return groups;
+    }
+
+    function renderGroupedJobs(groups) {
+      if (!jobItemTemplate) {
+        return;
+      }
+
+      groups.forEach(function (group) {
+        let targetElement = null;
+
+        if (group.hasExplicitName) {
+          const header = document.createElement('div');
+          header.className = 'job-group-title text-muted small';
+          header.textContent = group.name;
+          jobList.appendChild(header);
+          targetElement = header;
+        }
+
+        group.items.forEach(function (item) {
+          const newNode = document.importNode(jobItemTemplate.content, true);
+          jobList.appendChild(newNode);
+          const jobNode = jobList.lastElementChild;
+          renderJobOrView(jobNode, item.url, item.job);
+          if (!targetElement) {
+            targetElement = jobNode;
+          }
+        });
+
+        if (targetElement) {
+          summaryTargets.set(group.key, targetElement);
+        }
+      });
+    }
+
+    // Aggregates statuses for a group with dedup by Jenkins job URL.
+    function countGroupStatuses(group) {
+      const counts = { success: 0, warning: 0, danger: 0 };
+      const seen = new Set();
+      let fallbackIndex = 0;
+
+      group.items.forEach(function (item) {
+        const job = item.job || {};
+        const targets = job.jobs ? Object.keys(job.jobs).map(k => job.jobs[k]) : [job];
+
+        targets.forEach(function (target) {
+          const statusKey = target && target.statusClass;
+          if (!counts.hasOwnProperty(statusKey)) {
+            return;
+          }
+
+          const dedupeUrl = normalizeJobUrl(target && target.url);
+          const dedupeKey = dedupeUrl || ('missing-url-' + (++fallbackIndex));
+          if (seen.has(dedupeKey)) {
+            return;
+          }
+
+          seen.add(dedupeKey);
+          counts[statusKey]++;
+        });
       });
 
       return counts;
     }
 
-    function renderSummary(jobs) {
+    function renderSummary(groups) {
       if (!summaryList || !summaryItemTemplate) {
         return;
       }
 
       const show = $rootScope.options && $rootScope.options.showSummary !== false;
-      const hasJobs = jobs && Object.keys(jobs).length > 0;
+      const hasGroups = groups && groups.length > 0;
 
       // Clear existing summary rows (keep the template)
       while (summaryList.firstChild) {
@@ -183,23 +257,27 @@ export async function documentReady() {
         }
       }
 
-      summaryList.classList.toggle('hidden', !show || !hasJobs);
+      summaryList.classList.toggle('hidden', !show || !hasGroups);
 
-      if (!show || !hasJobs) {
+      if (!show || !hasGroups) {
         return;
       }
 
-      renderRepeat(summaryList, summaryItemTemplate, jobs, renderSummaryItem);
+      groups.forEach(function (group) {
+        const newNode = document.importNode(summaryItemTemplate.content, true);
+        summaryList.appendChild(newNode);
+        renderSummaryItem(summaryList.lastElementChild, group);
+      });
     }
 
-    function renderSummaryItem(node, url, job) {
-      if (!job) return;
+    function renderSummaryItem(node, group) {
+      if (!group) return;
 
-      const counts = countStatuses(job);
+      const counts = countGroupStatuses(group);
 
       _.forEach(node.querySelectorAll('[data-summaryname]'), function (el) {
-        el.innerText = (job.customName || job.name) || url;
-        el.title = job.url || url;
+        el.innerText = group.name;
+        el.title = group.name;
       });
 
       _.forEach(node.querySelectorAll('[data-summaryfield]'), function (el) {
@@ -208,7 +286,7 @@ export async function documentReady() {
 
       _.forEach(node.querySelectorAll('[data-summarycount]'), function (el) {
         el.onclick = function () {
-          const target = jobElements.get(url);
+          const target = summaryTargets.get(group.key);
           if (target) {
             target.scrollIntoView({ behavior: 'smooth', block: 'start' });
           }

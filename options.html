@@ -50,6 +50,11 @@
       margin-right: 8px;
     }
 
+    .job-entry-group {
+      flex: 1;
+      margin-right: 8px;
+    }
+
     .job-entry-url.invalid {
       border-color: #d9534f;
       color: #d9534f;
@@ -118,13 +123,14 @@
 
 <fieldset>
   <legend>Listening job build urls</legend>
-  <i>One entry per job, view or folder. Name is optional and overrides the name fetched from Jenkins.</i>
+  <i>One entry per job, view or folder. Name overrides the Jenkins name; Group lets you regroup multiple links together.</i>
   <br><br>
   <div id="jobEntries"></div>
   <template id="jobEntryTemplate">
     <div class="job-entry-row">
       <input type="url" class="job-entry-url" placeholder="http://jenkins/job/my_job/" pattern="https?://.+">
       <input type="text" class="job-entry-name" placeholder="Custom name (optional)">
+      <input type="text" class="job-entry-group" placeholder="Group (optional)">
       <button type="button" class="job-entry-move job-entry-up" aria-label="Move up">&#8593;</button>
       <button type="button" class="job-entry-move job-entry-down" aria-label="Move down">&#8595;</button>
       <button type="button" class="job-entry-remove" aria-label="Remove">&times;</button>
