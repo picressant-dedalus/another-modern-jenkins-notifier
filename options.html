@@ -5,143 +5,329 @@
   <meta charset="UTF-8">
   <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'wasm-unsafe-eval'">
   <style>
+    :root {
+      color-scheme: light;
+      --bg: #f4f7fb;
+      --card: #ffffff;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --border: #dbe3ee;
+      --primary: #2563eb;
+      --primary-dark: #1d4ed8;
+      --danger: #dc2626;
+      --success: #166534;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 24px;
+      background: linear-gradient(180deg, #eef3fb 0%, var(--bg) 100%);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      line-height: 1.4;
+    }
+
+    .page {
+      max-width: 960px;
+      margin: 0 auto;
+      display: grid;
+      gap: 16px;
+    }
+
+    h1 {
+      margin: 0 0 4px;
+      font-size: 1.6rem;
+      letter-spacing: -0.01em;
+    }
+
+    .subtitle {
+      margin: 0;
+      color: var(--muted);
+    }
+
+    fieldset {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      margin: 0;
+      background: var(--card);
+      box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+    }
+
+    legend {
+      font-weight: 700;
+      padding: 0 8px;
+    }
+
     fieldset[disabled] {
       opacity: 0.75;
     }
 
+    p {
+      margin: 12px 0;
+    }
+
+    .radio-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px 18px;
+      margin-top: 8px;
+    }
+
+    .radio-group label,
+    .inline-checkbox {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 500;
+    }
+
+    .refresh-note {
+      display: block;
+      margin-top: 8px;
+      color: var(--muted);
+    }
+
+    #refreshTime {
+      width: 100%;
+      accent-color: var(--primary);
+    }
+
+    input[type="text"],
+    input[type="url"] {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 10px;
+      font: inherit;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+      min-width: 0;
+    }
+
+    input[type="text"]:focus,
+    input[type="url"]:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.14);
+      outline: none;
+    }
+
+    button {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 12px;
+      background: #fff;
+      font: inherit;
+      cursor: pointer;
+      color: var(--text);
+      transition: background-color 0.15s ease, border-color 0.15s ease;
+    }
+
+    button:hover {
+      background: #f8fafc;
+      border-color: #c7d4e5;
+    }
+
+    #addJobEntry,
+    #saveUrls,
+    #resetShortcut {
+      font-weight: 600;
+    }
+
+    #addJobEntry,
+    #saveUrls {
+      border-color: var(--primary);
+      color: #fff;
+      background: var(--primary);
+    }
+
+    #addJobEntry:hover,
+    #saveUrls:hover {
+      background: var(--primary-dark);
+      border-color: var(--primary-dark);
+    }
+
     .error {
-      color: #d9534f;
-      margin-top: 5px;
+      color: var(--danger);
+      margin-top: 6px;
       display: none;
     }
 
     .shortcut-input {
-      padding: 5px;
-      width: 200px;
+      width: 220px;
       font-family: monospace;
-      margin-right: 10px;
     }
 
     .shortcut-container {
       display: flex;
+      flex-wrap: wrap;
       align-items: center;
-      margin-bottom: 10px;
+      gap: 10px;
+      margin-bottom: 8px;
     }
 
     .shortcut-help {
-      color: #666;
-      font-size: 0.9em;
-      margin-top: 5px;
+      color: var(--muted);
+      font-size: 0.92em;
+      margin-top: 4px;
     }
 
     .job-entry-row {
       display: flex;
       align-items: center;
+      gap: 8px;
       margin-bottom: 8px;
+      padding: 8px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: #fbfdff;
     }
 
     .job-entry-url {
       flex: 2;
-      margin-right: 8px;
     }
 
     .job-entry-name {
       flex: 1;
-      margin-right: 8px;
     }
 
     .job-entry-group {
       flex: 1;
-      margin-right: 8px;
     }
 
     .job-entry-url.invalid {
-      border-color: #d9534f;
-      color: #d9534f;
+      border-color: var(--danger);
+      color: var(--danger);
     }
 
     .job-entry-remove {
       flex: none;
+      min-width: 36px;
     }
 
     .job-entry-move {
       flex: none;
-      margin-right: 4px;
+      min-width: 36px;
+    }
+
+    .status {
+      margin: -4px 0 0;
+      font-size: 0.92rem;
+      color: var(--success);
+      visibility: hidden;
+    }
+
+    .row-actions {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .helper {
+      color: var(--muted);
+      display: block;
+      margin-bottom: 12px;
+    }
+
+    @media (max-width: 900px) {
+      body {
+        padding: 16px;
+      }
+
+      .job-entry-row {
+        flex-wrap: wrap;
+      }
+
+      .job-entry-url,
+      .job-entry-name,
+      .job-entry-group {
+        flex: 1 1 100%;
+      }
     }
   </style>
 </head>
 
 <body>
+  <div class="page">
+    <header>
+      <h1>Another Modern Jenkins Notifier</h1>
+      <p class="subtitle">Configure polling, notifications, shortcuts, and grouped monitored links.</p>
+    </header>
 
-<fieldset>
-  <legend>Options</legend>
-  <p>
-    <b>Show popup notifications:</b>
-    <br>
-    <label>
-      <input type="radio" name="notification" value="all" checked>
-      On every build
-    </label>
-    <label>
-      <input type="radio" name="notification" value="unstable">
-      On every unstable build
-    </label>
-    <label>
-      <input type="radio" name="notification" value="none">
-      Never
-    </label>
-  </p>
-  <p>
-    <label><b>Refresh time:</b></label><br>
-    <input style="width: 100%;" min="5" max="120" step="5" range-type="s" type="range" id="refreshTime">
-    <br>
-    <i>Check server for changes every <b><span id="refreshTimeSpan"></span> seconds</b></i>
-  </p>
-  <p>
-    <label>
-      <input type="checkbox" id="showSummary" checked>
-      <b>Show build status summary at top of popup</b>
-    </label>
-  </p>
-</fieldset>
-<p style="visibility: hidden" id="optionStatus">Options saved.</p>
+    <fieldset>
+      <legend>Options</legend>
+      <p>
+        <b>Show popup notifications:</b>
+        <span class="radio-group">
+          <label>
+            <input type="radio" name="notification" value="all" checked>
+            On every build
+          </label>
+          <label>
+            <input type="radio" name="notification" value="unstable">
+            On every unstable build
+          </label>
+          <label>
+            <input type="radio" name="notification" value="none">
+            Never
+          </label>
+        </span>
+      </p>
+      <p>
+        <label for="refreshTime"><b>Refresh time:</b></label>
+        <input min="5" max="120" step="5" range-type="s" type="range" id="refreshTime">
+        <i class="refresh-note">Check server for changes every <b><span id="refreshTimeSpan"></span> seconds</b></i>
+      </p>
+      <p>
+        <label class="inline-checkbox">
+          <input type="checkbox" id="showSummary" checked>
+          <b>Show build status summary at top of popup</b>
+        </label>
+      </p>
+    </fieldset>
+    <p id="optionStatus" class="status">Options saved.</p>
 
-<fieldset>
-  <legend>Keyboard Shortcuts</legend>
-  <div class="shortcut-container">
-    <label><b>Add Job Shortcut:</b></label>
-    <input type="text" id="addJobShortcut" class="shortcut-input" placeholder="Press keys..." readonly>
-    <button id="resetShortcut">Reset to Default</button>
+    <fieldset>
+      <legend>Keyboard Shortcut</legend>
+      <div class="shortcut-container">
+        <label for="addJobShortcut"><b>Add job shortcut:</b></label>
+        <input type="text" id="addJobShortcut" class="shortcut-input" placeholder="Press keys..." readonly>
+        <button id="resetShortcut" type="button">Reset to default</button>
+      </div>
+      <div class="shortcut-help">
+        Default: Shift + J<br>
+        Click the input box and press your desired key combination.<br>
+        Supported modifiers: Shift, Ctrl, Alt
+      </div>
+    </fieldset>
+    <p id="shortcutStatus" class="status">Shortcut saved.</p>
+
+    <fieldset>
+      <legend>Listening job build URLs</legend>
+      <i class="helper">One entry per job, view, or folder. Name overrides the Jenkins name; Group lets you regroup multiple links together.</i>
+      <div id="jobEntries"></div>
+      <template id="jobEntryTemplate">
+        <div class="job-entry-row">
+          <input type="url" class="job-entry-url" placeholder="http://jenkins/job/my_job/" pattern="https?://.+">
+          <input type="text" class="job-entry-name" placeholder="Custom name (optional)">
+          <input type="text" class="job-entry-group" placeholder="Group (optional)">
+          <button type="button" class="job-entry-move job-entry-up" aria-label="Move up">&#8593;</button>
+          <button type="button" class="job-entry-move job-entry-down" aria-label="Move down">&#8595;</button>
+          <button type="button" class="job-entry-remove" aria-label="Remove">&times;</button>
+        </div>
+      </template>
+      <div class="error" id="urlsError">Please enter valid Jenkins URLs (must start with http:// or https://)</div>
+      <div class="row-actions">
+        <button id="addJobEntry" type="button">+ Add job</button>
+        <button id="saveUrls" type="submit">Save URLs</button>
+      </div>
+    </fieldset>
+    <p id="urlsStatus" class="status">Urls saved.</p>
   </div>
-  <div class="shortcut-help">
-    Default: Shift + J<br>
-    Click the input box and press your desired key combination.<br>
-    Supported modifiers: Shift, Ctrl, Alt
-  </div>
-</fieldset>
-<p style="visibility: hidden" id="shortcutStatus">Shortcut saved.</p>
-
-<fieldset>
-  <legend>Listening job build urls</legend>
-  <i>One entry per job, view or folder. Name overrides the Jenkins name; Group lets you regroup multiple links together.</i>
-  <br><br>
-  <div id="jobEntries"></div>
-  <template id="jobEntryTemplate">
-    <div class="job-entry-row">
-      <input type="url" class="job-entry-url" placeholder="http://jenkins/job/my_job/" pattern="https?://.+">
-      <input type="text" class="job-entry-name" placeholder="Custom name (optional)">
-      <input type="text" class="job-entry-group" placeholder="Group (optional)">
-      <button type="button" class="job-entry-move job-entry-up" aria-label="Move up">&#8593;</button>
-      <button type="button" class="job-entry-move job-entry-down" aria-label="Move down">&#8595;</button>
-      <button type="button" class="job-entry-remove" aria-label="Remove">&times;</button>
-    </div>
-  </template>
-  <div class="error" id="urlsError">Please enter valid Jenkins URLs (must start with http:// or https://)</div>
-  <button id="addJobEntry" type="button">+ Add job</button>
-  <br><br>
-  <button id="saveUrls" type="submit">Save urls</button>
-</fieldset>
-<p style="visibility: hidden" id="urlsStatus">Urls saved.</p>
 
 <script type="module" src="js/options.js"></script>
 </body>
